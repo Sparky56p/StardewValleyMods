@@ -277,7 +277,7 @@ namespace WorkingFireplace
                         Utility.tileWithinRadiusOfPlayer((int)furniture1.TileLocation.X, (int)furniture1.TileLocation.Y, 1, Game1.player) | Utility.tileWithinRadiusOfPlayer((int)furniture1.TileLocation.X+1, (int)furniture1.TileLocation.Y, 1, Game1.player))
                     {
                         Helper.Input.Suppress(e.Button);
-                        Game1.showRedMessage("Debug - Null Range");
+                       // Game1.showRedMessage("Debug - Null Range");
                     }
                     else if (Game1.currentLocation is FarmHouse farmHouse4 && Game1.activeClickableMenu == null &&
                e.Button.IsUseToolButton() && e.IsDown(e.Button))
