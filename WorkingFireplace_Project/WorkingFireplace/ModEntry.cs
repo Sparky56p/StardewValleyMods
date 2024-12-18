@@ -23,6 +23,11 @@ using StardewValley.Locations;
 using StardewValley.Objects;
 using StardewValley.Characters;
 using StardewValley.BellsAndWhistles;
+using StardewValley.Extensions;
+using StardewValley.ItemTypeDefinitions;
+using System.Runtime.Intrinsics.X86;
+using Object = StardewValley.Object;
+using xTile.Tiles;
 
 #if Harmony
 using Harmony;
@@ -140,7 +145,7 @@ namespace WorkingFireplace
 
             void Display_MenuChanged(object sender, MenuChangedEventArgs e)
         {
-            if (e.NewMenu is StardewValley.Menus.DialogueBox && Game1.player.isInBed && Config.show_temperature_in_bed)
+            if (e.NewMenu is StardewValley.Menus.DialogueBox && Game1.player.isInBed.Value && Config.show_temperature_in_bed)
             {
                 Helper.Events.Display.RenderedActiveMenu += Display_RenderedActiveMenu;
             }
@@ -157,7 +162,7 @@ namespace WorkingFireplace
             Rectangle rectangle = Game1.graphics.GraphicsDevice.Viewport.GetTitleSafeArea();
             float x = (float)(rectangle.Right - 48 - 8);
             rectangle = Game1.graphics.GraphicsDevice.Viewport.GetTitleSafeArea();
-            Vector2 vector = new Vector2(x, (float)(rectangle.Bottom - 224 - 16 - (int)((float)(Game1.player.MaxStamina - 270) * num)));
+            Vector2 vector = new(x, (float)(rectangle.Bottom - 224 - 16 - (int)((float)(Game1.player.MaxStamina - 270) * num)));
 
             bool isCold = !WarmInside(false) && tooColdToday;
 
@@ -183,23 +188,23 @@ namespace WorkingFireplace
                 if (warmth)
                 {
                     if (Config.showMessageOnStartOfDay)
-                        Game1.addHUDMessage(new HUDMessage(Helper.Translation.Get("msg.warm"), ""));
+                        Game1.addHUDMessage(new HUDMessage(Helper.Translation.Get("msg.warm")));
                 }
                 else
                 {
                     if (Config.showMessageOnStartOfDay)
                     {
                         if (HasSpouse())
-                            Game1.addHUDMessage(new HUDMessage(Helper.Translation.Get("msg.spousecold"), ""));
+                            Game1.addHUDMessage(new HUDMessage(Helper.Translation.Get("msg.spousecold")));
                         else
-                            Game1.addHUDMessage(new HUDMessage(Helper.Translation.Get("msg.cold"), ""));
+                            Game1.addHUDMessage(new HUDMessage(Helper.Translation.Get("msg.cold")));
                     }
                     Game1.currentLocation.playSound("coldSpell");
 
                     if (Config.penalty)
                     {
                         Game1.player.health = CalcAttribute(Game1.player.health, Config.reduce_health, Game1.player.maxHealth);
-                        Game1.player.stamina = CalcAttribute(Game1.player.stamina, Config.reduce_stamina, Game1.player.maxStamina);
+                        Game1.player.stamina = CalcAttribute(Game1.player.stamina, Config.reduce_stamina, Game1.player.maxStamina.Value);
                         if (HasSpouse())
                             Game1.player.changeFriendship(-Config.reduce_friendship_spouse, GetSpouse());
                         Game1.player.getChildren().ForEach((child) => Game1.player.changeFriendship(-Config.reduce_friendship_children, child));
@@ -236,34 +241,54 @@ namespace WorkingFireplace
         {
             Point grabtile = VectorToPoint(e.Cursor.GrabTile);
 
-            if (Game1.currentLocation is FarmHouse farmHouse1 && Game1.activeClickableMenu == null &&
+            if (Game1.currentLocation is FarmHouse farmHouse && Game1.activeClickableMenu == null &&
                 e.Button.IsUseToolButton() && e.IsDown(e.Button))
             {
                 //the fireplace is moved. We want to turn it off to avoid floating flames.
-                Point tile = VectorToPoint(e.Cursor.Tile);
-                SetFireplace(farmHouse1, tile.X, tile.Y, false, true);
+                Point tile = VectorToPoint(Game1.player.GetGrabTile());
+                SetFireplace(farmHouse, tile.X, tile.Y, false, true);
             }
-            else if (Game1.currentLocation is FarmHouse farmHouse && Game1.activeClickableMenu == null &&
+            else if (Game1.currentLocation is FarmHouse farmHouse1 && Game1.activeClickableMenu == null &&
                 e.Button.IsActionButton() && e.IsDown(e.Button) &&
-                farmHouse.getObjectAtTile(grabtile.X, grabtile.Y) is Furniture furniture &&
-                furniture.furniture_type == Furniture.fireplace)
+                farmHouse1.getObjectAtTile(grabtile.X, grabtile.Y) is Furniture furniture &&
+                furniture.furniture_type.Value == Furniture.fireplace)
             {
                 Helper.Input.Suppress(e.Button);
 
-                if (!furniture.isOn)
+                if (!furniture.IsOn)
                 {
                     Item item = Game1.player.CurrentItem;
                     if (item != null && item.Name == "Wood" && item.Stack >= Config.wood_pieces)
                     {
-                        Game1.player.removeItemsFromInventory(item.ParentSheetIndex, Config.wood_pieces);
-                        SetFireplace(farmHouse, grabtile.X, grabtile.Y, true);
+                        Game1.player.ActiveItem.ConsumeStack(Config.wood_pieces);
+                        SetFireplace(farmHouse1, grabtile.X, grabtile.Y, true);
                         return;
                     }
                     Game1.showRedMessage(Helper.Translation.Get("msg.nowood", new { Config.wood_pieces }));
                 }
             }
-        }
 
+            else if (Game1.currentLocation is FarmHouse farmHouse2 && Game1.activeClickableMenu == null &&
+                farmHouse2.getObjectAtTile(grabtile.X, grabtile.Y) == null)
+            {
+                foreach (Furniture furniture1 in farmHouse2.furniture)
+                {
+                    if (e.Button.IsActionButton() && e.IsDown(e.Button) && furniture1.furniture_type.Value == Furniture.fireplace && !Game1.player.IsSitting() && 
+                        Utility.tileWithinRadiusOfPlayer((int)furniture1.TileLocation.X, (int)furniture1.TileLocation.Y, 1, Game1.player) | Utility.tileWithinRadiusOfPlayer((int)furniture1.TileLocation.X+1, (int)furniture1.TileLocation.Y, 1, Game1.player))
+                    {
+                        Helper.Input.Suppress(e.Button);
+                        Game1.showRedMessage("Debug - Null Range");
+                    }
+                    else if (Game1.currentLocation is FarmHouse farmHouse4 && Game1.activeClickableMenu == null &&
+               e.Button.IsUseToolButton() && e.IsDown(e.Button))
+                    {
+                        //the fireplace is moved. We want to turn it off to avoid floating flames.
+                        Point tile = VectorToPoint(Game1.player.GetGrabTile());
+                        SetFireplace(farmHouse4, tile.X, tile.Y, false, true);
+                    }
+                }
+            }
+        }
         private bool WarmInside(bool changeFireplace)
         {
             bool warmth = false;
@@ -277,9 +302,9 @@ namespace WorkingFireplace
             {
                 foreach (Furniture furniture in farmHouse.furniture)
                 {
-                    if (furniture.furniture_type == Furniture.fireplace && furniture.isOn)
+                    if (furniture.furniture_type.Value == Furniture.fireplace && furniture.IsOn)
                     {
-                        Point tile = VectorToPoint(furniture.tileLocation.Get());
+                        Point tile = VectorToPoint(furniture.TileLocation);
                         if (changeFireplace)
                             SetFireplace(farmHouse, tile.X, tile.Y, false, false);
                         warmth = true;
@@ -360,20 +385,20 @@ namespace WorkingFireplace
         /// <param name="playsound">should a sound be played?</param>
         private void SetFireplace(FarmHouse farmHouse, int X, int Y, bool on, bool playsound = true)
         {
-            if (farmHouse.getObjectAtTile(X, Y) is Furniture furniture && furniture.furniture_type == Furniture.fireplace)
+            if (farmHouse.getObjectAtTile(X, Y) is Furniture furniture && furniture.furniture_type.Value == Furniture.fireplace)
             {
                 //fireplaces are two tiles wide. The "FarmHouse.setFireplace" method needs the left tile so we set it to the left one.
                 if (farmHouse.getObjectAtTile(X-1, Y) == furniture)
                 {
                     X = X - 1;
                 }
-                if (furniture.isOn.Get() != on)
+                if (furniture.IsOn != on)
                 {
                     furniture.isOn.Set(on);
                     farmHouse.setFireplace(on, X, Y, playsound);
                     if (!on && furniture.lightSource != null)
                     {
-                        farmHouse.removeLightSource(furniture.lightSource.Identifier);
+                        farmHouse.removeLightSource(furniture.lightSource.Id);
                     }
                 }
             }
