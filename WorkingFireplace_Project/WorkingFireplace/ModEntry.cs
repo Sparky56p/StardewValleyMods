@@ -217,15 +217,15 @@ namespace WorkingFireplace
                         {
                             case 1:
                                 Child child = Game1.player.getChildren()[0];
-                                GetSpouse().setNewDialogue("$2" + Helper.Translation.Get("dia.spousecold_child", new { child1 = child.Name }) + " " + please, true);
+                                GetSpouse().setNewDialogue("$2" + Helper.Translation.Get("dia.spousecoldChild", new { child1 = child.Name }) + " " + please, true);
                                 break;
                             case 2:
                                 Child child1 = Game1.player.getChildren()[0];
                                 Child child2 = Game1.player.getChildren()[1];
-                                GetSpouse().setNewDialogue("$2" + Helper.Translation.Get("dia.spousecold_children", new { child1 = child1.Name, child2 = child2.Name }) + " " + please, true);
+                                GetSpouse().setNewDialogue("$2" + Helper.Translation.Get("dia.spousecoldChildren", new { child1 = child1.Name, child2 = child2.Name }) + " " + please, true);
                                 break;
                             default:
-                                GetSpouse().setNewDialogue("$2" + Helper.Translation.Get("dia.spousecold") + " " + please, true);
+                                GetSpouse().setNewDialogue("$2" + Helper.Translation.Get("dia.spousecold" + " " + please, true));
                                 break;
                         }
                     }
@@ -266,6 +266,11 @@ namespace WorkingFireplace
                     }
                     Game1.showRedMessage(Helper.Translation.Get("msg.nowood", new { Config.wood_pieces }));
                 }
+                else if (furniture.IsOn)
+                {
+                    //Game1.showRedMessage("Debug - Already Active");
+                    return;
+                }
             }
 
             else if (Game1.currentLocation is FarmHouse farmHouse2 && Game1.activeClickableMenu == null &&
@@ -273,11 +278,11 @@ namespace WorkingFireplace
             {
                 foreach (Furniture furniture1 in farmHouse2.furniture)
                 {
-                    if (e.Button.IsActionButton() && e.IsDown(e.Button) && furniture1.furniture_type.Value == Furniture.fireplace && !Game1.player.IsSitting() && 
-                        Utility.tileWithinRadiusOfPlayer((int)furniture1.TileLocation.X, (int)furniture1.TileLocation.Y, 1, Game1.player) | Utility.tileWithinRadiusOfPlayer((int)furniture1.TileLocation.X+1, (int)furniture1.TileLocation.Y, 1, Game1.player))
+                    if (e.Button.IsActionButton() && e.IsDown(e.Button) && furniture1.furniture_type.Value == Furniture.fireplace && !Game1.player.IsSitting() &&
+                        Utility.tileWithinRadiusOfPlayer((int)furniture1.TileLocation.X, (int)furniture1.TileLocation.Y, 1, Game1.player) | Utility.tileWithinRadiusOfPlayer((int)furniture1.TileLocation.X + 1, (int)furniture1.TileLocation.Y, 1, Game1.player))
                     {
                         Helper.Input.Suppress(e.Button);
-                       // Game1.showRedMessage("Debug - Null Range");
+                        //Game1.showRedMessage("Debug - Null Range");
                     }
                     else if (Game1.currentLocation is FarmHouse farmHouse4 && Game1.activeClickableMenu == null &&
                e.Button.IsUseToolButton() && e.IsDown(e.Button))
